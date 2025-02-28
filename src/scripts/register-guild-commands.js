@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 
 // ID du serveur Discord
-const GUILD_ID = '1344829703592083597';
+const GUILD_ID = '1344827466799255625';
 
 // Fonction pour enregistrer les commandes sur un serveur spécifique
 async function registerGuildCommands() {

@@ -319,6 +319,13 @@ function startDiscordBot() {
             await helpCommand.handleBackToGeneral(interaction);
           }
         }
+        // Handle lottery draw confirmation or cancellation (if added later)
+        else if (customId === 'confirm_draw' || customId === 'cancel_draw') {
+          const drawCommand = client.commands.get('draw-lottery');
+          if (drawCommand && drawCommand.handleButton) {
+            await drawCommand.handleButton(interaction, customId);
+          }
+        }
         // Unhandled button
         else {
           console.warn(`Unhandled button: ${customId}`);
@@ -353,4 +360,4 @@ function startDiscordBot() {
 }
 
 // Start the application
-main(); 
+main();
