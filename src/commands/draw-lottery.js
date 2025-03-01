@@ -9,20 +9,41 @@ module.exports = {
     .setDescription('Draw the lottery winner (participants or owner only)'),
 
   async execute(interaction) {
-    await interaction.deferReply();
+    await interaction.deferReply({ ephemeral: true });
 
     try {
+      const userId = interaction.user.id;
+      const user = await User.findOne({ discordId: userId });
+      if (!user || !user.privateKey) {
+        return interaction.editReply({ content: '❌ You need to connect a wallet first using /connect.' });
+      }
+
       const provider = new ethers.JsonRpcProvider(process.env.ETHEREUM_PROVIDER_URL);
       const lotteryAddress = process.env.LOTTERY_ADDRESS;
+      if (!lotteryAddress) {
+        throw new Error('LOTTERY_ADDRESS is not defined in the environment variables.');
+      }
+
       const lotteryABI = [
         'function isLotteryActive() view returns (bool)',
         'function getParticipantCount() view returns (uint256)',
-        'function lastDrawTime() view returns (uint256)'
+        'function lastDrawTime() view returns (uint256)',
+        'function ticketCount(address) view returns (uint256)',
+        'function getTotalTicketCount() view returns (uint256)',
+        'function rlusdToken() view returns (address)'
       ];
       const lotteryContract = new ethers.Contract(lotteryAddress, lotteryABI, provider);
 
       const isActive = await lotteryContract.isLotteryActive();
       const participantCount = Number(await lotteryContract.getParticipantCount());
+      // Adjust 'address' to the correct field name from your User model if needed
+      const userAddress = user.address || user.walletAddress; // Replace with actual field name if different
+      if (!userAddress) {
+        throw new Error('User wallet address is not defined.');
+      }
+      const userTickets = Number(await lotteryContract.ticketCount(userAddress));
+      const totalTickets = Number(await lotteryContract.getTotalTicketCount());
+      const rlusdTokenAddress = await lotteryContract.rlusdToken();
 
       if (!isActive) {
         return interaction.editReply({ content: '❌ Lottery is not active.' });
@@ -31,10 +52,14 @@ module.exports = {
         return interaction.editReply({ content: `❌ Need at least 1 participant (current: ${participantCount}).` });
       }
 
+      const rlusdABI = ['function balanceOf(address account) view returns (uint256)'];
+      const rlusdContract = new ethers.Contract(rlusdTokenAddress, rlusdABI, provider);
+      const prizePool = ethers.formatEther(await rlusdContract.balanceOf(lotteryAddress));
+
       const embed = new EmbedBuilder()
         .setColor('#FF0000')
         .setTitle('⚠️ Confirm Lottery Draw')
-        .setDescription(`Are you sure you want to draw the lottery winner?\n\n**Unique Participants:** ${participantCount}`)
+        .setDescription(`Are you sure you want to draw the lottery winner?\n\n**Your Tickets:** ${userTickets}\n**Total Tickets:** ${totalTickets}\n**Unique Participants:** ${participantCount}\n**Prize Pool:** ${prizePool} RLUSD`)
         .setTimestamp();
 
       const row = new ActionRowBuilder()
@@ -97,6 +122,10 @@ module.exports = {
         const userWallet = new ethers.Wallet(user.privateKey, provider);
 
         const lotteryAddress = process.env.LOTTERY_ADDRESS;
+        if (!lotteryAddress) {
+          throw new Error('LOTTERY_ADDRESS is not defined in the environment variables.');
+        }
+
         const lotteryABI = [
           'function drawWinner()',
           'function winner() view returns (address)'
