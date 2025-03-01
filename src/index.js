@@ -326,6 +326,13 @@ function startDiscordBot() {
             await drawCommand.handleButton(interaction, customId);
           }
         }
+        // Handle buy ticket confirmation or cancellation
+        else if (customId.startsWith('confirm_buy_ticket_') || customId === 'cancel_buy_ticket') {
+          const buyTicketCommand = client.commands.get('buy-lottery-ticket');
+          if (buyTicketCommand && buyTicketCommand.handleButton) {
+            await buyTicketCommand.handleButton(interaction, customId);
+          }
+        }
         // Unhandled button
         else {
           console.warn(`Unhandled button: ${customId}`);

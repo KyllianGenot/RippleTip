@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { ethers } = require('ethers');
-const User = require('../models/User'); // Assurez-vous que ce chemin correspond à votre modèle User
+const User = require('../models/User');
 require('dotenv').config();
 
 module.exports = {
@@ -13,7 +13,7 @@ module.exports = {
 
     try {
       const provider = new ethers.JsonRpcProvider(process.env.ETHEREUM_PROVIDER_URL);
-      const lotteryAddress = '0x441D56a6024cfFF1514191b69810aad10B3c1340';
+      const lotteryAddress = process.env.LOTTERY_ADDRESS;
       const lotteryABI = [
         'function isLotteryActive() view returns (bool)',
         'function getParticipantCount() view returns (uint256)',
@@ -23,8 +23,6 @@ module.exports = {
 
       const isActive = await lotteryContract.isLotteryActive();
       const participantCount = Number(await lotteryContract.getParticipantCount());
-      const lastDraw = Number(await lotteryContract.lastDrawTime());
-      const now = Math.floor(Date.now() / 1000);
 
       if (!isActive) {
         return interaction.editReply({ content: '❌ Lottery is not active.' });
@@ -36,7 +34,7 @@ module.exports = {
       const embed = new EmbedBuilder()
         .setColor('#FF0000')
         .setTitle('⚠️ Confirm Lottery Draw')
-        .setDescription(`Are you sure you want to draw the lottery winner?\n\n**Participants:** ${participantCount}`)
+        .setDescription(`Are you sure you want to draw the lottery winner?\n\n**Unique Participants:** ${participantCount}`)
         .setTimestamp();
 
       const row = new ActionRowBuilder()
@@ -53,37 +51,63 @@ module.exports = {
 
       await interaction.editReply({ embeds: [embed], components: [row], ephemeral: true });
     } catch (error) {
-      console.error(error);
+      console.error('Error in execute:', error);
       await interaction.editReply({ content: '❌ Error initiating lottery draw: ' + error.message });
     }
   },
 
   async handleButton(interaction, customId) {
     if (customId === 'confirm_draw') {
+      await interaction.deferUpdate();
+
+      const loadingEmbed = new EmbedBuilder()
+        .setColor('#FFA500')
+        .setTitle('⏳ Drawing Lottery...')
+        .setDescription('Please wait while the lottery winner is being drawn.')
+        .setTimestamp();
+
+      const disabledRow = new ActionRowBuilder()
+        .addComponents(
+          new ButtonBuilder()
+            .setCustomId('confirm_draw')
+            .setLabel('Confirm')
+            .setStyle(ButtonStyle.Success)
+            .setDisabled(true),
+          new ButtonBuilder()
+            .setCustomId('cancel_draw')
+            .setLabel('Cancel')
+            .setStyle(ButtonStyle.Danger)
+            .setDisabled(true)
+        );
+
+      await interaction.editReply({ embeds: [loadingEmbed], components: [disabledRow] });
+
       try {
         const userId = interaction.user.id;
         const user = await User.findOne({ discordId: userId });
         if (!user || !user.privateKey) {
-          return interaction.update({
-            content: '❌ You need to connect a wallet first using /connect-wallet.',
+          return await interaction.editReply({
+            content: '❌ You need to connect a wallet first using /connect.',
             embeds: [],
-            components: [],
-            ephemeral: true
+            components: []
           });
         }
 
         const provider = new ethers.JsonRpcProvider(process.env.ETHEREUM_PROVIDER_URL);
         const userWallet = new ethers.Wallet(user.privateKey, provider);
 
-        const lotteryAddress = '0x441D56a6024cfFF1514191b69810aad10B3c1340'; // Remplacez par la nouvelle adresse après redeploiement
+        const lotteryAddress = process.env.LOTTERY_ADDRESS;
         const lotteryABI = [
           'function drawWinner()',
           'function winner() view returns (address)'
         ];
         const lotteryContract = new ethers.Contract(lotteryAddress, lotteryABI, userWallet);
 
+        const timeout = (ms) => new Promise((_, reject) => setTimeout(() => reject(new Error('Transaction timed out')), ms));
+
         const tx = await lotteryContract.drawWinner();
-        await tx.wait();
+        console.log('Draw transaction sent:', tx.hash);
+        await Promise.race([tx.wait(), timeout(60000)]);
 
         const winner = await lotteryContract.winner();
         const announcementEmbed = new EmbedBuilder()
@@ -92,19 +116,17 @@ module.exports = {
           .setDescription(`The winner is: \`${winner}\``);
 
         await interaction.channel.send({ embeds: [announcementEmbed] });
-        await interaction.update({
+        await interaction.editReply({
           content: '✅ Lottery drawn successfully!',
           embeds: [],
-          components: [],
-          ephemeral: true
+          components: []
         });
       } catch (error) {
-        console.error(error);
-        await interaction.update({
-          content: '❌ Error drawing lottery: ' + error.message,
+        console.error('Error in draw-lottery:', error);
+        await interaction.editReply({
+          content: `❌ Error drawing lottery: ${error.message || 'Unknown error'}`,
           embeds: [],
-          components: [],
-          ephemeral: true
+          components: []
         });
       }
     } else if (customId === 'cancel_draw') {
