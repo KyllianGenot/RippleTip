@@ -1,0 +1,69 @@
+# Dependency directories
+node_modules/
+jspm_packages/
+
+# MongoDB Memory Server (contient des fichiers volumineux)
+**/mongodb-memory-server/
+
+# Build outputs
+dist/
+build/
+out/
+.next/
+.nuxt/
+.output/
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+logs
+*.log
+
+# Cache directories
+.npm
+.eslintcache
+.stylelintcache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+.cache/
+.parcel-cache
+
+# IDE specific files
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Testing
+coverage/
+.nyc_output/
+
+# Misc
+.DS_Store
+Thumbs.db
+*.pem
+.vercel
+.turbo
+
+# Local Netlify folder
+.netlify
+
+# TypeScript
+*.tsbuildinfo 

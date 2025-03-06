@@ -1,0 +1,26 @@
+{
+  "name": "ripple-tip-discord-bot",
+  "version": "1.0.0",
+  "description": "Discord bot for connecting wallets and transferring RLUSD tokens",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "test-tokens": "node src/scripts/test-tokens.js",
+    "test-mongodb": "node src/scripts/test-mongodb.js",
+    "refresh-commands": "node src/scripts/refresh-commands.js",
+    "delete-commands": "node src/scripts/delete-commands.js",
+    "register-guild": "node src/scripts/register-guild-commands.js",
+    "delete-all-commands": "node src/scripts/delete-all-commands.js"
+  },
+  "dependencies": {
+    "discord.js": "^14.14.1",
+    "dotenv": "^16.3.1",
+    "ethers": "^6.9.0",
+    "mongodb-memory-server": "^10.1.4",
+    "mongoose": "^8.0.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}
