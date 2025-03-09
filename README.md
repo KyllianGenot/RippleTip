@@ -2,6 +2,8 @@
 
 RippleTip is a Discord bot that allows users to send and receive RLUSD (Ripple USD) tokens on the Ethereum Sepolia testnet. The bot provides a seamless experience for tipping other users, managing wallets, and participating in a lottery system.
 
+Feel free to check our project page on Devfolio: [RippleTip](https://devfolio.co/projects/starkwolf-fb5e)
+
 ## 🚀 Driving RLUSD Adoption
 
 RippleTip directly aligns with Ripple's mission to drive RLUSD adoption by making it easy for users to send and receive RLUSD on Discord, one of the largest online communities.
